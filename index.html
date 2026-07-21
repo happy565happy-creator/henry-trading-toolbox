@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>加密貨幣交易工具箱</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 10px;
+        }
+        h2 {
+            font-size: 26px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: #e5e5e5;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        /* 摺疊區塊外框 */
+        .accordion-item {
+            border: 1px solid #1c1c1e;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            background-color: #050505;
+        }
+
+        /* 摺疊標題按鈕 */
+        .accordion-header {
+            width: 100%;
+            background-color: #121214;
+            color: #ffffff;
+            padding: 18px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .accordion-header:hover {
+            background-color: #1c1c1e;
+        }
+        .accordion-icon {
+            font-size: 14px;
+            color: #8e8e93;
+            transition: transform 0.3s;
+        }
+        
+        /* 展開的內容容器 */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            padding: 0 20px;
+        }
+        .accordion-content.open {
+            max-height: 2000px; /* 加大高度以容納多筆分倉 */
+            padding: 20px;
+            border-top: 1px solid #1c1c1e;
+        }
+
+        /* --- 內部元素通用樣式 --- */
+        .total-box {
+            background-color: #1e1e1e;
+            border: 1px solid #2d2d2d;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .total-title { color: #8e8e93; font-size: 14px; margin-bottom: 8px; font-weight: 500; }
+        .total-value { color: #64b5f6; font-size: 32px; font-weight: bold; }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .card { background-color: #000000; border-radius: 8px; overflow: hidden; }
+        .card.long { border: 1px solid #162a1c; }
+        .card.short { border: 1px solid #2a1616; }
+        .card-header { padding: 12px; text-align: center; font-size: 16px; font-weight: bold; }
+        .card.long .card-header { background-color: #0d1a11; color: #52c41a; border-bottom: 1px solid #162a1c; }
+        .card.short .card-header { background-color: #1a0d0d; color: #ff4d4f; border-bottom: 1px solid #2a1616; }
+        .card-body { padding: 15px; }
+        .item-group { margin-bottom: 15px; }
+        .item-group:last-child { margin-bottom: 0; }
+        .item-label { color: #8e8e93; font-size: 12px; margin-bottom: 4px; }
+        .item-val { font-size: 18px; font-weight: bold; }
+        .card.long .item-val.pnl, .card.long .item-val.roe { color: #52c41a; }
+        .card.short .item-val.pnl, .card.short .item-val.roe { color: #ff4d4f; }
+
+        .summary-bar {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 35px;
+            padding: 0 10px;
+        }
+        .summary-item { text-align: center; }
+        .summary-label { font-size: 12px; color: #8e8e93; margin-bottom: 6px; }
+        .summary-value { font-size: 16px; font-weight: bold; }
+        .divider { width: 1px; height: 25px; background-color: #3a3a3c; }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 30px;
+            row-gap: 20px;
+        }
+        .input-field { display: flex; align-items: center; justify-content: space-between; }
+        .input-field label { font-size: 15px; color: #ffffff; font-weight: 500; white-space: nowrap; margin-right: 15px; }
+        .input-field input {
+            width: 120px; background-color: #121214; border: 1px solid #1c1c1e; border-radius: 12px;
+            color: #ffffff; padding: 10px 14px; font-size: 15px; font-weight: 500; outline: none;
+        }
+
+        .chg-result-box {
+            background-color: #121214; border: 1px solid #1c1c1e; border-radius: 12px; padding: 20px; margin-top: 15px;
+        }
+        .chg-row { font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+        .btn-clear {
+            background-color: #1e1e1e; border: 1px solid #3a3a3c; color: #ffffff;
+            padding: 8px 20px; font-size: 14px; border-radius: 6px; cursor: pointer; margin-top: 10px;
+        }
+        .btn-clear:hover { background-color: #2d2d2d; }
+
+        /* --- 多批次補倉計算器專屬樣式 --- */
+        .market-price-box {
+            background-color: #121214; border: 1px solid #1c1c1e; border-radius: 12px;
+            padding: 15px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .market-price-box label { font-size: 14px; color: #e5e5e5; }
+        .market-price-box input {
+            width: 150px; background-color: #000; border: 1px solid #2d2d2d; border-radius: 8px;
+            color: #ffffff; padding: 8px 12px; text-align: right; font-size: 16px; outline: none;
+        }
+        .list-header {
+            display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+            font-size: 14px; color: #8e8e93; font-weight: 500;
+        }
+        .btn-toggle-rows {
+            background-color: #121214; border: 1px solid #2d2d2d; color: #ffffff;
+            padding: 4px 10px; font-size: 12px; border-radius: 6px; cursor: pointer;
+        }
+        .table-labels {
+            display: grid; grid-template-columns: 50px 1fr 1fr; gap: 10px;
+            font-size: 13px; color: #8e8e93; margin-bottom: 8px; padding-left: 5px;
+        }
+        .batch-row {
+            display: grid; grid-template-columns: 50px 1fr 1fr; gap: 10px; margin-bottom: 8px; align-items: center;
+        }
+        .batch-row.hidden { display: none; }
+        .batch-row input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer; justify-self: center;
+            accent-color: #64b5f6;
+        }
+        .batch-row input[type="number"] {
+            width: 100%; background-color: #121214; border: 1px solid #1c1c1e; border-radius: 8px;
+            color: #ffffff; padding: 8px; font-size: 14px; outline: none;
+        }
+        .batch-row input[type="number"]:focus { border-color: #2d2d2d; }
+        
+        .report-box {
+            background-color: #0d1b2a; border: 1px solid #1b263b; border-radius: 12px;
+            padding: 20px; margin-top: 20px;
+        }
+        .report-title { font-size: 14px; color: #e0e1dd; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; }
+        .report-row { display: flex; justify-content: space-between; font-size: 15px; margin-bottom: 12px; font-weight: bold; }
+        .report-row:last-child { margin-bottom: 0; }
+        .report-label { color: #e0e1dd; }
+        .report-val { color: #ffffff; }
+        .report-divider { height: 1px; background-color: #415a77; margin: 12px 0; border: none; }
+        .hint-text { font-size: 11px; color: #8e8e93; text-align: center; margin-top: 12px; }
+    
+body{
+padding:
+max(20px,env(safe-area-inset-top))
+max(20px,env(safe-area-inset-right))
+max(20px,env(safe-area-inset-bottom))
+max(20px,env(safe-area-inset-left));
+}
+input,select,textarea{font-size:16px!important;-webkit-appearance:none;border-radius:8px;}
+@media (max-width:768px){
+.cards-grid,.input-grid{grid-template-columns:1fr!important;}
+.input-field{flex-direction:column;align-items:stretch;}
+.input-field label{margin:0 0 8px 0;}
+.input-field input,.market-price-box input{width:100%!important;}
+.market-price-box{flex-direction:column;align-items:stretch;gap:10px;}
+.table-labels,.batch-row{grid-template-columns:40px 1fr 1fr;}
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>加密貨幣交易工具箱</h2>
+    
+    <!-- 功能一：合約槓桿計算器 -->
+    <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleSection('contractCalc', this)">
+            <span>📊 加密貨幣槓桿盈虧計算器</span>
+            <span class="accordion-icon">▶</span>
+        </button>
+        <div id="contractCalc" class="accordion-content">
+            <div class="total-box">
+                <div class="total-title">總合約體量</div>
+                <div class="total-value" id="topSize">$1,000.00</div>
+            </div>
+
+            <div class="cards-grid">
+                <div class="card long">
+                    <div class="card-header">做多 (Long)</div>
+                    <div class="card-body">
+                        <div class="item-group"><div class="item-label">預估盈虧 (USD)</div><div class="item-val pnl" id="longPnL">$100.00</div></div>
+                        <div class="item-group"><div class="item-label">回報率 (ROI)</div><div class="item-val roe" id="longRoe">100.00%</div></div>
+                        <div class="item-group"><div class="item-label">預估強平價 (USD)</div><div class="item-val liq" id="longLiq">$45,000.00</div></div>
+                    </div>
+                </div>
+                <div class="card short">
+                    <div class="card-header">做空 (Short)</div>
+                    <div class="card-body">
+                        <div class="item-group"><div class="item-label">預估盈虧 (USD)</div><div class="item-val pnl" id="shortPnL">$-100.00</div></div>
+                        <div class="item-group"><div class="item-label">回報率 (ROI)</div><div class="item-val roe" id="shortRoe">-100.00%</div></div>
+                        <div class="item-group"><div class="item-label">預估強平價 (USD)</div><div class="item-val liq" id="shortLiq">$55,000.00</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-bar">
+                <div class="summary-item"><div class="summary-label">總合約體量 (USD)</div><div class="summary-value" id="midSize">1,000.00</div></div>
+                <div class="divider"></div>
+                <div class="summary-item"><div class="summary-label">做多盈虧 (USD)</div><div class="summary-value" id="midLongPnL">100.00</div></div>
+                <div class="divider"></div>
+                <div class="summary-item"><div class="summary-label">做空盈虧 (USD)</div><div class="summary-value" id="midShortPnL">-100.00</div></div>
+            </div>
+
+            <div class="input-grid">
+                <div class="input-field"><label>本金 (USD)</label><input type="number" id="margin" value="100" oninput="calculateContract()"></div>
+                <div class="input-field"><label>槓桿倍數</label><input type="number" id="leverage" value="10" oninput="calculateContract()"></div>
+                <div class="input-field"><label>開倉價格 (USD)</label><input type="number" id="entry" value="50000" oninput="calculateContract()"></div>
+                <div class="input-field"><label>目標價格 (USD)</label><input type="number" id="target" value="55000" oninput="calculateContract()"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能二：多批次分倉補倉攤平計算器 -->
+    <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleSection('batchCalc', this)">
+            <span>🧮 多批次分倉補倉攤平計算器 (12筆進階版)</span>
+            <span class="accordion-icon">▶</span>
+        </button>
+        <div id="batchCalc" class="accordion-content">
+            
+            <div class="market-price-box">
+                <label>💡 目前最新市場價格 (以此價計算回本%與即時總損益)</label>
+                <div>
+                    <input type="number" id="curMarketPrice" value="81" oninput="calculateBatch()">
+                    <span style="font-size: 12px; color: #8e8e93; margin-left: 5px;">USD</span>
+                </div>
+            </div>
+
+            <div class="list-header">
+                <span>◆ 分倉歷史買入清單 (最多可輸入 12 筆)</span>
+                <button class="btn-toggle-rows" id="btnToggleRows" onclick="toggleEmptyRows()">收起多餘分倉 ▲</button>
+            </div>
+
+            <div class="table-labels">
+                <div style="text-align: center;">啟用</div>
+                <div>買入價格 (USD)</div>
+                <div>買入數量 (個)</div>
+            </div>
+
+            <!-- 12筆資料循環產生 -->
+            <div id="batchRowsContainer">
+                <!-- 由底下的 JS 動態產生 12 列，方便管理與維護 -->
+            </div>
+
+            <!-- 綜合數據預估綜合報告 -->
+            <div class="report-box">
+                <div class="report-title">⚡ 已勾選持倉之綜合數據預估：</div>
+                
+                <div class="report-row"><span class="report-label">當前總投入成本:</span><span class="report-val" id="repTotalCost">0.00 USD</span></div>
+                <div class="report-row"><span class="report-label">當前總持有數量:</span><span class="report-val" id="repTotalQty">0.0000 個</span></div>
+                <div class="report-row"><span class="report-label">即時總損益金額:</span><span class="report-val" id="repTotalPnL">0.00 USD</span></div>
+                <div class="report-row"><span class="report-label">分倉持倉【平均價格】:</span><span class="report-val" id="repAvgPrice" style="color: #64b5f6;">0.00 USD</span></div>
+                
+                <hr class="report-divider">
+                
+                <div class="report-row"><span class="report-label">解套回本目標價:</span><span class="report-val" id="repTargetPrice" style="color: #64b5f6;">0.00 USD</span></div>
+                <div class="report-row"><span class="report-label">需從目前市價再上漲:</span><span class="report-val" id="repNeedMove" style="color: #ffb703;">0.00 USD (0.00%)</span></div>
+            </div>
+            
+            <div class="hint-text">※ 點擊按鈕可隨時隱藏/展開分倉。只有「被勾選啟用」的列才會納入均價與損益計算！</div>
+        </div>
+    </div>
+
+    <!-- 功能三：漲跌幅計算器 -->
+    <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleSection('changeCalc', this)">
+            <span>📉 價格漲跌幅計算器</span>
+            <span class="accordion-icon">▶</span>
+        </button>
+        <div id="changeCalc" class="accordion-content">
+            <div class="input-grid" style="margin-top: 5px;">
+                <div class="input-field"><label>原始價格</label><input type="number" id="priceOriginal" placeholder="請輸入" oninput="calculateChange()"></div>
+                <div class="input-field"><label>目前價格</label><input type="number" id="priceCurrent" placeholder="請輸入" oninput="calculateChange()"></div>
+            </div>
+
+            <div class="chg-result-box">
+                <div class="chg-row">差額：<span id="resDiff" style="color: #64b5f6;">0</span></div>
+                <div class="chg-row">百分比：<span id="resPercent" style="color: #64b5f6;">0.00%</span></div>
+                <button class="btn-clear" onclick="clearChangeCalc()">清空</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+/* ---------------- 摺疊開關控制 ---------------- */
+function toggleSection(id, headerBtn) {
+    const content = document.getElementById(id);
+    const icon = headerBtn.querySelector('.accordion-icon');
+    
+    if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        content.classList.add('open');
+        icon.style.transform = 'rotate(90deg)';
+    }
+}
+
+/* ---------------- 初始化產生 12 筆分倉欄位 ---------------- */
+const defaultRowsData = [
+    { active: true, price: 95, qty: 1 },
+    { active: true, price: 85, qty: 1 },
+    { active: true, price: 80, qty: 0.5 }
+];
+const container = document.getElementById('batchRowsContainer');
+for (let i = 1; i <= 12; i++) {
+    const rowData = defaultRowsData[i-1] || { active: false, price: '', qty: '' };
+    const rowHtml = `
+        <div class="batch-row" id="row_${i}">
+            <input type="checkbox" id="chk_${i}" ${rowData.active ? 'checked' : ''} onchange="calculateBatch()">
+            <input type="number" id="price_${i}" value="${rowData.price}" placeholder="分倉 ${i} 價格" oninput="calculateBatch()">
+            <input type="number" id="qty_${i}" value="${rowData.qty}" placeholder="數量" oninput="calculateBatch()">
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', rowHtml);
+}
+
+let hideEmpty = false;
+function toggleEmptyRows() {
+    hideEmpty = !hideEmpty;
+    document.getElementById('btnToggleRows').innerText = hideEmpty ? "展開多餘分倉 ▼" : "收起多餘分倉 ▲";
+    for (let i = 1; i <= 12; i++) {
+        const chk = document.getElementById(`chk_${i}`);
+        const row = document.getElementById(`row_${i}`);
+        if (hideEmpty && !chk.checked) {
+            row.classList.add('hidden');
+        } else {
+            row.classList.remove('hidden');
+        }
+    }
+}
+
+/* ---------------- 多批次補倉攤平計算邏輯 ---------------- */
+function calculateBatch() {
+    const marketPrice = parseFloat(document.getElementById('curMarketPrice').value) || 0;
+    
+    let totalCost = 0;
+    let totalQty = 0;
+    
+    for (let i = 1; i <= 12; i++) {
+        const isActive = document.getElementById(`chk_${i}`).checked;
+        const price = parseFloat(document.getElementById(`price_${i}`).value) || 0;
+        const qty = parseFloat(document.getElementById(`qty_${i}`).value) || 0;
+        
+        if (isActive && price > 0 && qty > 0) {
+            totalCost += (price * qty);
+            totalQty += qty;
+        }
+    }
+    
+    const repTotalCostEl = document.getElementById('repTotalCost');
+    const repTotalQtyEl = document.getElementById('repTotalQty');
+    const repTotalPnLEl = document.getElementById('repTotalPnL');
+    const repAvgPriceEl = document.getElementById('repAvgPrice');
+    const repTargetPriceEl = document.getElementById('repTargetPrice');
+    const repNeedMoveEl = document.getElementById('repNeedMove');
+    
+    repTotalCostEl.innerText = totalCost.toFixed(2) + " USD";
+    repTotalQtyEl.innerText = totalQty.toFixed(4) + " 個";
+    
+    if (totalQty === 0) {
+        repTotalPnLEl.innerText = "0.00 USD";
+        repTotalPnLEl.style.color = "#ffffff";
+        repAvgPriceEl.innerText = "0.00 USD";
+        repTargetPriceEl.innerText = "0.00 USD";
+        repNeedMoveEl.innerText = "0.00 USD (0.00%)";
+        repNeedMoveEl.style.color = "#ffb703";
+        return;
+    }
+    
+    // 計算均價
+    const avgPrice = totalCost / totalQty;
+    repAvgPriceEl.innerText = avgPrice.toFixed(2) + " USD";
+    repTargetPriceEl.innerText = avgPrice.toFixed(2) + " USD";
+    
+    // 計算即時總損益 (現貨/多頭邏輯)
+    const currentTotalValue = totalQty * marketPrice;
+    const totalPnL = currentTotalValue - totalCost;
+    
+    if (totalPnL > 0) {
+        repTotalPnLEl.innerText = `+${totalPnL.toFixed(2)} USD (獲利)`;
+        repTotalPnLEl.style.color = "#52c41a";
+    } else if (totalPnL < 0) {
+        repTotalPnLEl.innerText = `${totalPnL.toFixed(2)} USD (虧損)`;
+        repTotalPnLEl.style.color = "#ff4d4f";
+    } else {
+        repTotalPnLEl.innerText = "0.00 USD";
+        repTotalPnLEl.style.color = "#ffffff";
+    }
+    
+    // 計算需再上漲/下跌多少解套
+    if (marketPrice > 0) {
+        const movePrice = avgPrice - marketPrice;
+        const movePercent = (movePrice / marketPrice) * 100;
+        
+        if (movePrice > 0) {
+            repNeedMoveEl.innerText = `${movePrice.toFixed(2)} USD (+${movePercent.toFixed(2)}%)`;
+            repNeedMoveEl.style.color = "#ff4d4f"; // 需要上漲，對未解套的人來說是警示
+        } else if (movePrice < 0) {
+            repNeedMoveEl.innerText = `${Math.abs(movePrice).toFixed(2)} USD (${movePercent.toFixed(2)}%)`;
+            repNeedMoveEl.style.color = "#52c41a"; // 已經超越回本價了
+        } else {
+            repNeedMoveEl.innerText = "0.00 USD (0.00%)";
+            repNeedMoveEl.style.color = "#ffffff";
+        }
+    } else {
+        repNeedMoveEl.innerText = "---";
+    }
+}
+
+/* ---------------- 原本的合約計算功能 ---------------- */
+function formatCurrency(num, includeSign = false) {
+    const sign = includeSign && num >= 0 ? '+' : '';
+    if (num < 0) return '$-' + Math.abs(num).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return sign + '$' + num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function formatNumber(num) { return num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+function calculateContract() {
+    const margin = parseFloat(document.getElementById('margin').value) || 0;
+    const leverage = parseFloat(document.getElementById('leverage').value) || 0;
+    const entry = parseFloat(document.getElementById('entry').value) || 0;
+    const target = parseFloat(document.getElementById('target').value) || 0;
+
+    const size = margin * leverage;
+    document.getElementById('topSize').innerText = formatCurrency(size);
+    document.getElementById('midSize').innerText = formatNumber(size);
+
+    if (entry <= 0 || target <= 0 || leverage <= 0) return;
+    const priceChangePct = (target - entry) / entry;
+
+    // 做多
+    const longPnL = size * priceChangePct;
+    const longRoe = priceChangePct * leverage * 100;
+    document.getElementById('longPnL').innerText = formatCurrency(longPnL);
+    document.getElementById('longRoe').innerText = longRoe.toFixed(2) + '%';
+    document.getElementById('longLiq').innerText = formatCurrency(Math.max(0, entry * (1 - (1 / leverage))));
+    document.getElementById('midLongPnL').innerText = formatNumber(longPnL);
+
+    // 做空
+    const shortPnL = size * (-priceChangePct);
+    const shortRoe = (-priceChangePct) * leverage * 100;
+    document.getElementById('shortPnL').innerText = formatCurrency(shortPnL);
+    document.getElementById('shortRoe').innerText = shortRoe.toFixed(2) + '%';
+    document.getElementById('shortLiq').innerText = formatCurrency(entry * (1 + (1 / leverage)));
+    document.getElementById('midShortPnL').innerText = formatNumber(shortPnL);
+}
+
+/* ---------------- 原本的漲跌幅計算功能 ---------------- */
+function calculateChange() {
+    const original = parseFloat(document.getElementById('priceOriginal').value);
+    const current = parseFloat(document.getElementById('priceCurrent').value);
+    const resDiffEl = document.getElementById('resDiff');
+    const resPercentEl = document.getElementById('resPercent');
+
+    if (isNaN(original) || isNaN(current) || original === 0) {
+        resDiffEl.innerText = "0"; resDiffEl.style.color = "#64b5f6";
+        resPercentEl.innerText = "0.00%"; resPercentEl.style.color = "#64b5f6";
+        return;
+    }
+
+    const diff = current - original;
+    const percent = (diff / original) * 100;
+    resDiffEl.innerText = diff.toLocaleString(undefined, {maximumFractionDigits: 4});
+    resPercentEl.innerText = (percent >= 0 ? '+' : '') + percent.toFixed(2) + '%';
+
+    if (diff > 0) { resDiffEl.style.color = "#52c41a"; resPercentEl.style.color = "#52c41a"; }
+    else if (diff < 0) { resDiffEl.style.color = "#ff4d4f"; resPercentEl.style.color = "#ff4d4f"; }
+    else { resDiffEl.style.color = "#ffffff"; resPercentEl.style.color = "#ffffff"; }
+}
+
+function clearChangeCalc() {
+    document.getElementById('priceOriginal').value = '';
+    document.getElementById('priceCurrent').value = '';
+    calculateChange();
+}
+
+// 初始化執行所有計算
+calculateContract();
+calculateBatch();
+</script>
+</body>
+</html>
